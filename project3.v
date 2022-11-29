@@ -1,4 +1,3 @@
-
 // *******************************************************
 // File Name:		project3.v
 // Two-Way Set-Associative Cache Controller
@@ -353,7 +352,6 @@ begin
 	end
 end
 
-
 endmodule
 
 
@@ -421,4 +419,79 @@ assign OUT = memory[readAddress];
 endmodule
 
 
+//testbench 
+module project3_tb;
+	reg CLK, RST, readCPU, writeCPU, readyMem;
+	reg [15:0] adrCPU;
+
+	wire readMem, writeMem, stall;
+	wire [15:0] adrMM;
+	wire [7:0] dataCPU;
+	wire [7:0] dataMM;
+	
+	project3 dut(CLK, RST, readCPU, writeCPI, readyMem, adrCPU, readMem, writeMem, stall, adrMM, dataCPU, dataMM);
+	readCacheData dut(CLK, RST, ADR, IN, WRITE, OUT);
+	readTagData dut(CLK, RST, ADR, IN, WRITE, OUT);
+	
+	//data from inputs
+	reg [7:0] dcpu;
+	reg [7:0] wcpu;
+	reg [7:0] dmem;
+	reg [7:0] wmem;
+	
+	always #10 CLK = !CLK;
+	
+	initial
+	begin
+		RST=0; adrCPU=0; readCPU=0; writeCPU=0; readyMem=1; 
+		repeat(2)
+		delay;
+		RST = 1;
+		delay;
+		readCPU=1'b1; adrCPU = 16'b1100000010001011; dcpu = dataCPU;
+		delay;
+		readCPU = 1'b1; dcpu = dataCPU;
+		delay; 
+		writeCPU = 1'b1; wcpu = 8'h23; adrCPU = 16'b0000000010010011;
+		delay; delay;
+		writecpu = 1'd0;
+		delay; 
+		readCPU = 1'd1; adrCPU = 16'b0000000010010011; dcpu = dataCPU;
+		delay;
+		readCPU = 1'd1; dcpu = dataCPU;
+		delay;
+		readCPU = 1'd0;
+		delay;
+		readPCU = 1'd1; adrCPU = 16'b1100000010001011; dcpu = dataCPU;
+		delay;
+		readCPU = 1'd1; dcpu = dataCPU;
+		@(posedge readMem)
+		readyMem=0;
+		repeat(2)
+		delay;
+		readyMem=1;
+		@(posedge rd_mem);
+		readyMem=0;
+		repeat(4)
+		delay;
+		readyMem = 1;
+		delay;
+		
+		dmem = 8'hAA;
+		delay;
+		dmem = 8'hBB;
+		delay;
+		dmem = 8'hCC;
+		delay;
+		dmem = 8'hDD;
+		delay;
+		readCPU = 1'd0;   
+		 
+		repeat(5)
+		delay;
+		
+		#100 $finish;
+	end
+	
+endmodule
 
