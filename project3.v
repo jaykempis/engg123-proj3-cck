@@ -15,7 +15,7 @@ input readCPU;
 input writeCPU;
 output reg readMem;
 output reg writeMem;
-output reg stallCPU;
+output reg stall;
 
 //cache parameters in powers of 2
 parameter cachesize = 22; //4MB
@@ -45,6 +45,8 @@ reg readwrite;
 reg writeDataByte;
 
 reg flag;
+reg [adrWIDTH-1:0] adrlatch;
+
 
 //tag and data parameters and setup
 wire [(dataWIDTH*blocksize)-1:0] data1;  
@@ -65,9 +67,8 @@ reg [(valid_bit+used_bit+dirty_bit+tagWIDTH-1):0] stag2;
 wire  [dataWIDTH-1:0] bytew1;
 wire  [dataWIDTH-1:0] bytew2;
 
-//active high flags
+//active high flags for input/sample data
 reg [3:0] i;  
-reg readwrite;
 reg write1;
 reg write2;
 reg write3;
@@ -93,8 +94,30 @@ always@(posedge CLK or negedge RST)
 begin
 	if (!RST)
 	begin
-    //insert reset values
-    
+    //default parameters
+		state <= idle;
+		
+		adrMM <= 'b0;
+		readMem <= 'b0;
+		writeMem <= 'b0;
+		stall <= 'b0;
+		
+		writedata <= 'b0;
+		tag1 <= 'b0;
+		tag2 <= 'b0;
+		write1 <= 1'b0;
+		write2 <= 1'b0;
+		write3 <= 1'b0;
+		write4 <= 1'b0;
+		readwrite <= 1'b1;
+		
+		sdata1 <= 'b0;
+		sdata2 <= 'b0;
+		stag1 <= 'b0;
+		stag2 <= 'b0;
+		readdata <= 'b0;
+		index <= 4'd0;
+		flag <= 1'b0;
 	end
 	
 	else
@@ -103,7 +126,21 @@ begin
 		
 			idle: //default, wait for read/write 
 			begin
-			
+				//set parameters
+				write1 <= 1'b0;
+		        write2 <= 1'b0;
+				write3 <= 1'b0;
+				write4 <= 1'b0;
+				stall <= 1'b0;
+				readMem <= 1'b0;
+				writeMem <= 1'b0;
+				writedata <= 'b0;
+				writetag1 <= 'b0;
+				writetag2 <= 'b0;
+				
+				flag <= 1'b0;
+				index <= 4'd0;
+				
 				if(readCPU)
 				begin
 					state <= read;
@@ -122,21 +159,94 @@ begin
 			
 			read: //read hit or miss cache
 			begin 
-				//hit flag
-				//wire parameters
+				write1 <= 1'b0;
+				write2 <= 1'b0;
+				
+				//case statement for hit/miss
+				case(hit)
+					1'b0: 
+					begin
+						stag1 <= tag1;
+						stag2 <= tag2;
+						sdata1 <= data1;
+						sdata2 <= data2;
+						stall <= 1'b1;
+						write1 <= 1'b0;
+						write2 <= 1'b0;
+						if(ready_mem)
+						begin
+							if(valid & dirty) state <= updateMem;
+							else state <= readMem;
+						end
+						else state <= state;
+					end
+						
+					1'b1:
+					begin
+						state <= idle;
+						write1 <= 1'b1;
+						write2 <= 1'b1;
+						stall <= 1'b0;
+					    if(write_hit1)
+						begin
+							if(used1) writetag1 <= tag1;
+							else writetag1 <= {tag1[13],1'b1,tag1[11:0]};
+							if(used2) writetag2 <= tag2;
+							else writetag2 <= {tag2[13],1'b1,tag2[11:0]};
+						end
+					end
+				endcase	
 			end
 			
 			
 			write: //write hit or miss cache
 			begin
-				//hit flag
-				//wire paramters
+				//case statement for hit/miss
+				case(hit)
+					1'b0:  
+					begin
+						stag1 <= tag1;
+						stag2 <= tag2;
+						sdata1 <= data1;
+						sdata2 <= data2;
+						stall <= 1'b1;
+					  if(readyMem)
+						if(valid & dirty) state <= updataMem;
+						else state <= readMem;
+					  else state <= write;
+					end
+					
+					1'b1:
+					begin
+						state <= idle;
+						write1 <= 1'b1;
+						write2 <= 1'b1;
+						stall <= 1'b0;
+							if(write_hit1)
+							begin
+								write1 <= 1'b1;  
+								if(used1) writetag1 <= {tag1[13:12],1'b1,tag1[10:0]};
+								else writetag1 <= {tag2[13],1'b1,1'b1,tag1[10:0]};
+								if(used2) writetag2 <= tag2;
+								else writetag2 <= {tag3[13],1'b1,tag2[11:0]};
+							end
+							else
+							begin
+								write2 <= 1'b1;
+								if(used2) writetag2 <= {tag2[13],1'b0,1'b1,tag2[10:0]};
+								else writetag2 <= {tag2[13:12],1'b1,tag2[10:0]};
+								if(used1) writetag1 <= {tag1[13],1'b0,tag1[11:0]};
+								else writetag1 <= tag1;
+							 end
+					end
+				endcase
 			end
 			
 			
 			readMem: //drive memory bus address
 			begin
-				
+				flag <= 1'b0;
+				adrMM <= {addrlatch[15:2],2'd0};
 				if(readyMem)
 				begin
 					readMem <= 1'b1;
@@ -147,13 +257,11 @@ begin
 					readMem <= 1'b0;
 					state <= state;
 				end
-	
 			end
 			
 			
 			waitMem: //check/wait if memory bus is ready
 			begin
-			
 				if(readyMem)
 				begin
 					if(flag)	state <= readMM;
@@ -161,46 +269,92 @@ begin
 					readMem <= 1'b0;
 					writeMem <= 1'b1;
 				end
-				else
-				begin
-					state <= state;
+				else state <= waitMem;
 				end
-	
 			end
 			
 			
 			updateMem: //check LRU location
 			begin
-	
 				flag <= 1'b1;
+				//update
+				if(used1) adrMM <= {stag2[10:0],adrlatch[4:2],2'd0};
+				else adrMM <= {stag1[10:0],adrlatch[4:2],2'd0};
+				//move state
 				if(readyMem)
 				begin
+					writeMem <= 1'b1;
 					state <= waitMem;
 				end
 				else
 				begin
+					writeMem <= 1'b0;
 					state <= state;
 				end
-	
 			end
 			
 			
 			updateCache: //store read data to memory, update cache
 			begin
-	
+				if(index!=4'b1111) index <= {1'b1,index[3:1]};
+				else
+				begin
+					state <= idle;
+					if(used1)
+					begin
+						writetag2 <= {1'b1,1'b0,1'b0,adrlatch[15:5]};
+						writetag1 <= {stag1[13],1'b0,stag1[11:0]};
+						write2 <= 1'b1;
+						write1 <= 1'b0;
+						write3 <= 1'b1;
+						write4 <= 1'b1;
+					end
+					else
+					begin
+						writetag1 <= {1'b1,1'b1,1'b0,adrlatch[15:5]};
+						writetag2 <= {stag2[13],1'b1,stag3[11:0]};
+						write1 <= 1'd1;
+						write2 <= 1'd0;
+						write3 <= 1'd1;
+						write4 <= 1'd1;
+					end
+				end
 			end
-			
+		
 			
 			default: //default values
 			begin
-	
+				//default parameters
+				state <= idle;
+				
+				adrMM <= 'd0;
+				readMem <= 'd0;
+				writeMem <= 'd0;
+				stall <= 'd0;
+				
+				writedata <= 'd0;
+				tag1 <= 'd0;
+				tag2 <= 'd0;
+				write1 <= 1'd0;
+				write2 <= 1'd0;
+				write3 <= 1'd0;
+				write4 <= 1'd0;
+				readwrite <= 1'd1;
+					
+				sdata1 <= 'd0;
+				sdata2 <= 'd0;
+				stag1 <= 'd0;
+				stag2 <= 'd0;
+				readdata <= 'd0;
+				index <= 4'd0;
+				flag <= 1'd0;
 			end
 		endcase
 	end
-
-
 end
 
 
 endmodule
+
+
 
