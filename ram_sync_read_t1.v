@@ -1,33 +1,8 @@
-/*
-============================
-Parameterized Single Port RAM
-============================
-*/
 
-// File Name:		ram_sync_read_t1.v
-// Version:		0.0v
-//
-// Author:		Prasad Pandit & Radhika Mandlekar
-// Contact:		prasad@pdx.edu, radhika@pdx.edu
-//
-// Date created:	11/10/2015
-// Date modified:	NA
-//
-// Text-editor used:	Gvim 7v4
-//
-// Related filelist:	
-//
-// Description:		IP to infer single address and seperate read and write
-// 			data port Synchronous Read RAM
-// 			Width of Address & Data bus as well Depth of Data RAM can be
-// 			configured
-// 			Latching of data while writing is done at rising edge
-// 			of clock
-// 
-// NOTE:		Printing this file to PDF may create parsing
-// 			error, do verify PDF with this file for correctness of code and
-// 			indentation
-// ******************************************************************************************************
+// *******************************************************
+// File Name:		ram_sync_read_d0.v
+// Edited by: Iris Carson, Antonio Castro, Joshua Kempis
+// *******************************************************
 
 
 module ram_sync_read_t1(clock, addr, din, we, dout);

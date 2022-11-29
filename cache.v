@@ -13,11 +13,11 @@ parameter USEDBIT		= 1;
 parameter TAGWIDTH		= 11;
 
 
-input	clock;		//Clock input same as CPU and Memory controller(if MemController work on same freq.)
-input	reset_n;	//Active Low Asynchronous Reset Signal Input
+input	clock;		
+input	reset_n;	
 
-	inout	[DWIDTH-1:0]	data_cpu;	//Parameterized Bi-directional Data bus from CPU
-	inout	[DWIDTH-1:0]	data_mem;	//Parameterized Bi-directional Data bus to Main Memory
+	inout	[DWIDTH-1:0]	data_cpu;	U
+	inout	[DWIDTH-1:0]	data_mem;	
 	
 	input	[AWIDTH-1:0]	addr_cpu;	//Parameterized Address bus from CPU
 	output	reg[AWIDTH-1:0]	addr_mem;	//Parameterized Address bus to Main Memory
@@ -28,13 +28,12 @@ input	reset_n;	//Active Low Asynchronous Reset Signal Input
 	output	reg		rd_mem;		//Active High Read signal to Main Memory
 	output	reg		wr_mem;		//Active High Write signal to Main Memory
 
-	output	reg		stall_cpu;	//Active High Stall Signal to CPU, to halt the CPU while undergoing any other operation
-	input			ready_mem;	//Active High Ready signal from Main memory, to know the status of memory
+	output	reg		stall_cpu;	
+	input			ready_mem;	
 
 
 // State Machine Parameters
-
-localparam	IDLE		= 3'd0,	//Please read Description for explanation of States and their operation
+localparam	IDLE		= 3'd0,	
 		READ		= 3'd1,
 		WRITE		= 3'd2,
 		READMM		= 3'd3,
@@ -53,7 +52,7 @@ reg	[DWIDTH-1:0] wmem_byte;
 reg	[(DWIDTH*BLOCKSIZE)-1:0] rmem_4byte;
 reg	[(DWIDTH*BLOCKSIZE)-1:0] wmem_4byte;	
 
-reg	[3:0] count;	//To count byte transfer between Cache and memory during read and write memory operation, used as shift register.
+reg	[3:0] count;	
 
 reg	rdwr; // If read then '1', if write the '0'
 reg	we0;	//Active High Write Enable for DATA RAM 0
@@ -61,9 +60,7 @@ reg	we1;	//Active High Write Enable for DATA RAM 1
 reg	wet0;	//Active High Write Enable for TAG RAM 0
 reg	wet1;	//Active High Write Enable for TAG RAM 1
 
-reg	update_flag; // Internal flag, SET when enters Update MM state. It is used to make reuse of WAITFORMM state for both READMM and UPDATEMM 			//states
-
-// Internal Signals derived from respective data or address buses
+reg	update_flag; 
 wire	hit;
 wire	hit_w0;
 wire	hit_w1;
