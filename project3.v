@@ -357,4 +357,68 @@ end
 endmodule
 
 
+//module to read cache data files
+module readCacheData(CLK, ADR, IN, WRITE, OUT);
+input CLK, WRITE;
+
+parameter adrWIDTH = 3;
+parameter dataWIDTH = 32;
+localparam dep = 1 << adrWIDTH;
+
+input [AWIDTH-1:0] ADR
+input [DWIDTH-1:0] IN;
+output [DWIDTH-1:0] OUT;
+
+reg [dataWIDTH-1:0] memory [0:dep-1];
+
+initial
+begin
+	$readmemb("cachedata.txt", memory);
+end
+
+reg [adrWIDTH-1:0] readAddress;
+
+always@(posedge clock)
+begin
+  if(WRITE) memory[ADR] <= IN;	
+  readAddress <= ADR;		
+end
+
+assign OUT = memory[readAddress];
+
+endmodule
+
+
+//module to read tag data files
+module readTagData(CLK, ADR, IN, WRITE, OUT);
+input CLK, WRITE;
+
+parameter adrWIDTH = 3;
+parameter dataWIDTH = 32;
+localparam dep = 1 << adrWIDTH;
+
+input [AWIDTH-1:0] ADR
+input [DWIDTH-1:0] IN;
+output [DWIDTH-1:0] OUT;
+
+reg [dataWIDTH-1:0] memory [0:dep-1];
+
+initial
+begin
+	$readmemb("tagdata.txt", memory);
+end
+
+reg [adrWIDTH-1:0] readAddress;
+
+always@(posedge clock)
+begin
+	if(WRITE) memory[ADR] <= IN;	
+	readAddress <= ADR;		
+end
+
+assign OUT = memory[readAddress];
+
+endmodule
+
+
 
