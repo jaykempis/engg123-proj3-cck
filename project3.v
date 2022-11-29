@@ -1,3 +1,11 @@
+
+// *******************************************************
+// File Name:		project3.v
+// Two-Way Set-Associative Cache Controller
+// Hardware Implementation Project 3
+// Edited by: Iris Carson, Antonio Castro, Joshua Kempis
+// *******************************************************
+
 module project3(CLK, RST, adrCPU, adrMM, dataCPU, dataMM, readyMem, readCPU, writeCPI, readMem, writeMem, stallCPU);
 
 input CLK,
